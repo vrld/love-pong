@@ -26,7 +26,7 @@ init = function(state)
         text = "CPU vs CPU",
         onclick = function(self)
             sound.select()
-            gamestate.switch(gamestate.play, {players=0, reset=true, difficulty = state.data.difficulty})
+            gamestate.switch(gamestate.game, {players=0, reset=true, difficulty = state.data.difficulty})
         end,
         onenter = function(self)
             sound.click()
@@ -39,7 +39,7 @@ init = function(state)
         text = "Human vs CPU",
         onclick = function(self)
             sound.select()
-            gamestate.switch(gamestate.play, {players=1, reset=true, difficulty = state.data.difficulty})
+            gamestate.switch(gamestate.game, {players=1, reset=true, difficulty = state.data.difficulty})
         end,
         onenter = function(self)
             sound.click()
@@ -52,7 +52,7 @@ init = function(state)
         text = "Human vs Human",
         onclick = function(self)
             sound.select()
-            gamestate.switch(gamestate.play, {players=2, reset=true, difficulty = state.data.difficulty})
+            gamestate.switch(gamestate.game, {players=2, reset=true, difficulty = state.data.difficulty})
         end,
         onenter = function(self)
             sound.click()

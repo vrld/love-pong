@@ -56,7 +56,7 @@ function controller.smart(state, is_left)
     end
 end
 
-gamestate.play = gamestate.new{
+gamestate.game = gamestate.new{
 
 data = {
     paddle = {},
@@ -74,6 +74,7 @@ init = function(state)
                     vector.new(math.random() * 2 - 1,
                                math.random() * 2 - 1),
                     9, 400, 1.05, color)
+    state.data.ball.direction:normalize_inplace()
 
     state.data.ball.on_goal = function(left_player)
         sound.goal(left_player)
@@ -82,10 +83,13 @@ init = function(state)
         else
             state.data.score[2] = state.data.score[2] + 1
         end
+        love.graphics.setBackgroundColor(0,40,0)
     end
     state.data.ball.on_collision = function(pos)
         particles.spawn(pos, .3)
         sound.pingpong()
+        local frac = state.data.ball.speed / state.data.ball.orig_speed
+        love.graphics.setBackgroundColor(0,frac*40,0)
     end
 
     state.data.paddle[1] = paddle.new(vector.new(padding + size.x, love.graphics.getHeight()/2),
@@ -97,6 +101,7 @@ init = function(state)
 end,
 
 enter = function(state, options)
+    state.data.timeout = 3.9
     if not options then return end
     
     if options.reset then
@@ -141,10 +146,16 @@ enter = function(state, options)
 end,
 
 update = function(state, dt)
+    particles.update(dt)
+    if state.data.timeout > 1 then 
+        state.data.timeout = state.data.timeout - dt
+        return
+    end
+
     if state.data.score[1] > 10 then
-        gamestate.switch(gamestate.endgame, 1)
+        gamestate.switch(gamestate.finish, 1)
     elseif state.data.score[2] > 10 then
-        gamestate.switch(gamestate.endgame, 2)
+        gamestate.switch(gamestate.finish, 2)
     end
 
     local px = (state.data.ball.pos.x - love.graphics.getWidth() / 2) / (love.graphics.getWidth() / 2)
@@ -154,8 +165,6 @@ update = function(state, dt)
     for _,p in pairs(state.data.paddle) do
         p:controller(dt)
     end
-
-    particles.update(dt)
 end,
 
 draw = function(state)
@@ -182,6 +191,13 @@ draw = function(state)
     love.graphics.printf(tostring(state.data.score[1]), w2 - 5, 25, 0, 'right')
     love.graphics.print(":", w2 - 3, 24)
     love.graphics.printf(tostring(state.data.score[2]), w2 + 5, 25, 0, 'left')
+
+    if state.data.timeout > 1.3 then
+        love.graphics.setFont(60)
+        rsg = {"go!", "set", "ready?"}
+        love.graphics.printf(rsg[math.floor(state.data.timeout)], w2, h2-100, 0, 'center')
+        love.graphics.setFont(20)
+    end
 
     particles.draw()
 end,

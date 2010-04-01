@@ -78,23 +78,25 @@ function ball.paddle_collision(b, p)
     return true, d
 end
 
+local function sign(x) if x > 0 then return 1 elseif x < 0 then return -1 end return 0 end
 function ball.reflect(b, n)
     local projected = n* (b.direction * n)
     b.direction = b.direction - 2 * projected
 end
 
 function ball.update(b, dt, paddles)
-    local function sign(x) if x > 0 then return 1 elseif x < 0 then return -1 end return 0 end
     b.pos = b.pos + b.direction * b.speed * dt
     local collides, normal = b:wall_collision()
     if collides then
         if normal.y == 0 then
             b.on_goal(normal.x < 0)
+            -- reset ball
             b.pos = vector.new(love.graphics.getWidth()/2, 
                                love.graphics.getHeight()/2)
-            b.direction.x = -b.direction.x
-            b.direction.y = math.random() * .25 - .5
-            b.direction:normalize_inplace()
+            local phi = math.random() * math.pi/2 - math.pi/4
+            b.direction.x = -sign(b.direction.x) * math.cos(phi)
+            b.direction.y = math.sin(phi)
+
             b.speed = b.orig_speed
         else
             b.on_collision(b.pos)
