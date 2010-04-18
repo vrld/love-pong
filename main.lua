@@ -2,6 +2,7 @@ require "state_menu.lua"
 require "state_game.lua"
 require "state_pause.lua"
 require "state_finish.lua"
+require "hook.lua"
 
 function love.load()
     math.randomseed(os.time())
@@ -20,4 +21,8 @@ end
 
 function love.keyreleased(key)
     gamestate.current:onkey(key)
+end
+
+function love.mousereleased(x,y,b)
+    gamestate.current:mousereleased(x,y,b)
 end

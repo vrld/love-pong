@@ -2,7 +2,7 @@ require "vector"
 require "sound"
 require "gamestate"
 require "particles"
-require "button.lua"
+require "button"
 
 local next_difficulty = {
     Easy = "Normal",
@@ -17,86 +17,79 @@ data = {
     difficulty = "Normal",
 },
 
-init = function(state)
+init = function(self)
     local btnpos = vector.new(love.graphics.getWidth()/2, love.graphics.getHeight()/3 + 75)
     local btnspace = vector.new(0,75)
-    state.data.buttons['0p'] = button.new{
+    self.data.buttons['0p'] = button.new{
         pos = btnpos,
         size = vector.new(400,45),
         text = "CPU vs CPU",
-        onclick = function(self)
+        onclick = function()
             sound.select()
-            gamestate.switch(gamestate.game, {players=0, reset=true, difficulty = state.data.difficulty})
+            gamestate.switch(gamestate.game, {players=0, reset=true, difficulty = self.data.difficulty})
         end,
-        onenter = function(self)
+        onenter = function()
             sound.click()
         end,
     }
 
-    state.data.buttons['1p'] = button.new{
+    self.data.buttons['1p'] = button.new{
         pos = btnpos + btnspace,
         size = vector.new(400,45),
         text = "Human vs CPU",
-        onclick = function(self)
+        onclick = function()
             sound.select()
-            gamestate.switch(gamestate.game, {players=1, reset=true, difficulty = state.data.difficulty})
+            gamestate.switch(gamestate.game, {players=1, reset=true, difficulty = self.data.difficulty})
         end,
-        onenter = function(self)
+        onenter = function()
             sound.click()
         end,
     }
 
-    state.data.buttons['2p'] = button.new{
+    self.data.buttons['2p'] = button.new{
         pos = btnpos + 2 * btnspace,
         size = vector.new(400,45),
         text = "Human vs Human",
-        onclick = function(self)
+        onclick = function(btn)
             sound.select()
-            gamestate.switch(gamestate.game, {players=2, reset=true, difficulty = state.data.difficulty})
+            gamestate.switch(gamestate.game, {players=2, reset=true, difficulty = self.data.difficulty})
         end,
-        onenter = function(self)
+        onenter = function()
             sound.click()
         end,
     }
 
-    state.data.buttons['diff'] = button.new{
+    self.data.buttons['diff'] = button.new{
         pos = btnpos + 3 * btnspace,
         size = vector.new(400,45),
-        text = "Difficulty: "..state.data.difficulty,
-        onclick = function(self)
+        text = "Difficulty: "..self.data.difficulty,
+        onclick = function(btn)
             sound.select()
-            state.data.difficulty = next_difficulty[state.data.difficulty]
-            self.text = "Difficulty: " .. state.data.difficulty
-            local font = love.graphics.getFont()
-            self.textalign = vector.new(font:getWidth(self.text), -font:getHeight(self.text) + 6) / 2
+            self.data.difficulty = next_difficulty[self.data.difficulty]
+            btn.text = "Difficulty: " .. self.data.difficulty
+            btn:render()
         end,
-        onenter = function(self)
+        onenter = function()
             sound.click()
         end,
     }
 end,
 
-enter = function(state)
-    love.mousereleased = function(x,y,b)
-        if b ~= 'l' then return end
-        for _,btn in pairs(state.data.buttons) do
-            if button.is_hovered(btn,x,y) then
-                btn:onclick()
-            end
-        end
-        particles.spawn(vector.new(x,y), .3)
+enter = function(self)
+end,
+
+leave = function(self)
+end,
+
+mousereleased = function(self, x,y,btn)
+    for _,b in pairs(self.data.buttons) do
+        b:mouse(x,y,btn)
     end
-    love.graphics.setFont(30)
 end,
 
-leave = function(state)
-    love.mousereleased = function(x,y,b) end
-    love.graphics.setFont(20)
-end,
-
-draw = function(state)
+draw = function(self)
     love.graphics.setBackgroundColor(0,40,0)
-    if not state.data.logo then
+    if not self.data.logo then
         local px,py = 148, 97
         px = love.graphics.getWidth()/2
         py = 140
@@ -116,6 +109,7 @@ draw = function(state)
                 love.graphics.getWidth()/2 - 148, 140 - 97, 300, 130)
         -- blur and spotlight
         logodata:mapPixel(function(x,y,r,g,b,a)
+            local r,g,b,a = r,g,b,a
             if x > 2 and x < 297 then
                 pixels = {
                     {logodata:getPixel(x-2,y)},
@@ -134,21 +128,21 @@ draw = function(state)
             end
             return r,g,b,a
         end)
-        state.data.logo = love.graphics.newImage(logodata)
+        self.data.logo = love.graphics.newImage(logodata)
     else
         love.graphics.setColor(255,255,255,255)
-        love.graphics.draw(state.data.logo, love.graphics.getWidth()/2 - 148, 140 - 97)
+        love.graphics.draw(self.data.logo, love.graphics.getWidth()/2 - 148, 140 - 97)
     end
 
-    for _,b in pairs(state.data.buttons) do
+    for _,b in pairs(self.data.buttons) do
         b:draw()
     end
     particles.draw()
 end,
 
-update = function(state, dt)
+update = function(self, dt)
     particles.update(dt)
-    for _,b in pairs(state.data.buttons) do
+    for _,b in pairs(self.data.buttons) do
         b:update(dt)
     end
 end,

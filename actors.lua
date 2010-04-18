@@ -52,7 +52,7 @@ end
 function ball.wall_collision(b)
     if b.pos.y < b.radius then
         return true, vector.new(0, 1) end
-    if b.pos.y > love.graphics.getHeight() - b.radius then
+    if b.pos.y > love.graphics.getHeight() - b.radius - 1 then
         return true, vector.new(0,-1) end
     if b.pos.x < b.radius then
         return true, vector.new( 1,0) end
@@ -103,7 +103,7 @@ function ball.update(b, dt, paddles)
             b:reflect(normal)
             if b.pos.y - b.radius <= 0 then 
                 b.pos.y = b.radius + 1 end
-            if b.pos.y - b.radius >= love.graphics.getHeight() then 
+            if b.pos.y + b.radius >= love.graphics.getHeight() - 1 then 
                 b.pos.y = love.graphics.getHeight() - b.radius - 2 end
         end
         return
@@ -116,6 +116,15 @@ function ball.update(b, dt, paddles)
             b.speed = b.speed * b.speed_increase
             b:reflect(normal) 
             b.pos.x = p.pos.x + (p.size.x + b.radius) * sign(b.direction.x)
+
+            -- restrict reflection angle
+            local dir_vector = vector.new(sign(b.direction.x), 0)
+            local angle = dir_vector * b.direction
+            if angle < .4 then
+                b.direction.x = math.sin(.4) * sign(b.direction.x)
+                b.direction.y = math.cos(.4) * sign(b.direction.y)
+            end
+
             return
         end
     end

@@ -13,42 +13,46 @@ end
 
 function controller.keyboard(up, down)
     return function(p, dt)
+        if not p.holdingtime then p.holdingtime = 1 end
+        p.holdingtime = p.holdingtime + dt * 2
         if love.keyboard.isDown(up) then
-            p:move(-p.speed)
+            p:move(-p.speed * p.holdingtime)
         elseif love.keyboard.isDown(down) then
-            p:move(p.speed)
+            p:move(p.speed * p.holdingtime)
+        else
+            p.holdingtime = 1
         end
     end
 end
 
-function controller.predict_impact(state)
+function controller.predict_impact(self)
     return function(p, dt)
-        local m = state.data.ball.direction.y / state.data.ball.direction.x
-        m = m * (p.pos.x - state.data.ball.pos.x)
-        m = m + state.data.ball.pos.y - p.pos.y
+        local m = self.data.ball.direction.y / self.data.ball.direction.x
+        m = m * (p.pos.x - self.data.ball.pos.x)
+        m = m + self.data.ball.pos.y - p.pos.y
         local y = math.min(math.max(p.pos.y + m, 0), love.graphics.getHeight())
         p:move( (y - p.pos.y) * p.speed * dt )
     end
 end
 
-function controller.ballpos(state)
+function controller.ballpos(self)
     return function(p, dt)
-        local d = (state.data.ball.pos.y - p.pos.y) * p.speed
+        local d = (self.data.ball.pos.y - p.pos.y) * p.speed
         p:move(d*dt)
     end
 end
 
-function controller.smart(state, is_left)
+function controller.smart(self, is_left)
     local function towards_me(d)
         if is_left then return d < 0 end
         return d > 0
     end
-    local predict = controller.predict_impact(state)
-    local ballpos = controller.ballpos(state)
+    local predict = controller.predict_impact(self)
+    local ballpos = controller.ballpos(self)
 
     return function(p, dt)
-        local dx = math.abs(state.data.ball.pos.x - p.pos.x)
-        if towards_me(state.data.ball.direction.x) and dx < love.graphics.getWidth() / 2 then
+        local dx = math.abs(self.data.ball.pos.x - p.pos.x)
+        if towards_me(self.data.ball.direction.x) and dx < love.graphics.getWidth() / 2 then
             predict(p, dt)
         else
             ballpos(p, dt)
@@ -64,56 +68,57 @@ data = {
     score = {0,0}
 },
 
-init = function(state)
+init = function(self)
     local padding = 20
     local size = vector.new(8, 40)
     local color = {0,150,0,255}
 
-    state.data.ball = ball.new(vector.new(love.graphics.getWidth() / 2,
+    self.data.ball = ball.new(vector.new(love.graphics.getWidth() / 2,
                                love.graphics.getHeight() / 2),
                     vector.new(math.random() * 2 - 1,
                                math.random() * 2 - 1),
                     9, 400, 1.05, color)
-    state.data.ball.direction:normalize_inplace()
+    self.data.ball.direction:normalize_inplace()
 
-    state.data.ball.on_goal = function(left_player)
+    self.data.ball.on_goal = function(left_player)
         sound.goal(left_player)
         if left_player then
-            state.data.score[1] = state.data.score[1] + 1
+            self.data.score[1] = self.data.score[1] + 1
         else
-            state.data.score[2] = state.data.score[2] + 1
+            self.data.score[2] = self.data.score[2] + 1
         end
         love.graphics.setBackgroundColor(0,40,0)
     end
-    state.data.ball.on_collision = function(pos)
+    self.data.ball.on_collision = function(pos)
         particles.spawn(pos, .3)
         sound.pingpong()
-        local frac = state.data.ball.speed / state.data.ball.orig_speed
-        love.graphics.setBackgroundColor(0,frac*40,0)
+        local frac = self.data.ball.speed / self.data.ball.orig_speed
+        local s = (frac - 1) / 4
+        love.graphics.setBackgroundColor(s * 80, math.max((1 - s) * 40, 0), 0)
     end
 
-    state.data.paddle[1] = paddle.new(vector.new(padding + size.x, love.graphics.getHeight()/2),
-                            size, 7, color, controller.smart(state, true))
+    self.data.paddle[1] = paddle.new(vector.new(padding + size.x, love.graphics.getHeight()/2),
+                            size, 7, color, controller.smart(self, true))
 
-    state.data.paddle[2] = paddle.new(vector.new(love.graphics.getWidth() - padding - size.x,
+    self.data.paddle[2] = paddle.new(vector.new(love.graphics.getWidth() - padding - size.x,
                             love.graphics.getHeight()/2),
-                            size, 7, color, controller.smart(state, false))
+                            size, 7, color, controller.smart(self, false))
 end,
 
-enter = function(state, options)
-    state.data.timeout = 3.9
+enter = function(self, options)
+    self.data.timeout = 2.9
     if not options then return end
     
     if options.reset then
-        state.data.score = {0,0}
-        state.data.ball.pos = vector.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
-        state.data.ball.direction = vector.new(1, math.random() - .5):normalized()
+        self.data.score = {0,0}
+        self.data.ball.pos = vector.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
+        self.data.ball.direction = vector.new(1, math.random() - .5):normalized()
         if math.random() > .5 then
-            state.data.ball.direction.x = -state.data.ball.direction.x
+            self.data.ball.direction.x = -self.data.ball.direction.x
         end
-        state.data.ball.speed = 400
-        state.data.paddle[1].pos.y = love.graphics.getHeight()/2
-        state.data.paddle[2].pos.y = love.graphics.getHeight()/2
+        self.data.ball.speed = 400
+        self.data.paddle[1].pos.y = love.graphics.getHeight()/2
+        self.data.paddle[2].pos.y = love.graphics.getHeight()/2
     end
 
     local cpu_controller = {
@@ -128,46 +133,46 @@ enter = function(state, options)
     }
 
     if options.players == 0 then
-        state.data.paddle[1].controller = cpu_controller[options.difficulty](state, true)
-        state.data.paddle[1].speed = cpu_speed[options.difficulty]
-        state.data.paddle[2].controller = cpu_controller[options.difficulty](state, false)
-        state.data.paddle[2].speed = cpu_speed[options.difficulty]
+        self.data.paddle[1].controller = cpu_controller[options.difficulty](self, true)
+        self.data.paddle[1].speed = cpu_speed[options.difficulty]
+        self.data.paddle[2].controller = cpu_controller[options.difficulty](self, false)
+        self.data.paddle[2].speed = cpu_speed[options.difficulty]
     elseif options.players == 1 then
-        state.data.paddle[1].controller = controller.mouse
-        state.data.paddle[1].speed = 7
-        state.data.paddle[2].controller = cpu_controller[options.difficulty](state, false)
-        state.data.paddle[2].speed = cpu_speed[options.difficulty]
+        self.data.paddle[1].controller = controller.mouse
+        self.data.paddle[1].speed = 7
+        self.data.paddle[2].controller = cpu_controller[options.difficulty](self, false)
+        self.data.paddle[2].speed = cpu_speed[options.difficulty]
     elseif options.players == 2 then
-        state.data.paddle[1].controller = controller.keyboard('w','s')
-        state.data.paddle[1].speed = 10
-        state.data.paddle[2].controller = controller.keyboard('up','down')
-        state.data.paddle[2].speed = 10
+        self.data.paddle[1].controller = controller.keyboard('w','s')
+        self.data.paddle[1].speed = 10
+        self.data.paddle[2].controller = controller.keyboard('up','down')
+        self.data.paddle[2].speed = 10
     end
 end,
 
-update = function(state, dt)
+update = function(self, dt)
     particles.update(dt)
-    if state.data.timeout > 1 then 
-        state.data.timeout = state.data.timeout - dt
+    if self.data.timeout > 1 then 
+        self.data.timeout = self.data.timeout - dt
         return
     end
 
-    if state.data.score[1] > 10 then
+    if self.data.score[1] > 10 then
         gamestate.switch(gamestate.finish, 1)
-    elseif state.data.score[2] > 10 then
+    elseif self.data.score[2] > 10 then
         gamestate.switch(gamestate.finish, 2)
     end
 
-    local px = (state.data.ball.pos.x - love.graphics.getWidth() / 2) / (love.graphics.getWidth() / 2)
-    state.data.ball.radius = 12 + math.cos(px * math.pi) * 3
-    state.data.ball:update(dt, state.data.paddle)
+    local px = (self.data.ball.pos.x - love.graphics.getWidth() / 2) / (love.graphics.getWidth() / 2)
+    self.data.ball.radius = 12 + math.cos(px * math.pi) * 3
+    self.data.ball:update(dt, self.data.paddle)
 
-    for _,p in pairs(state.data.paddle) do
+    for _,p in pairs(self.data.paddle) do
         p:controller(dt)
     end
 end,
 
-draw = function(state)
+draw = function(self)
     local w,h = love.graphics.getWidth(), love.graphics.getHeight()
     local w2,h2 = w/2, h/2
 
@@ -179,30 +184,30 @@ draw = function(state)
     love.graphics.rectangle('line', 5, 5, w-10, h-9)
 
     -- paddles, particles, ball
-    for _,p in pairs(state.data.paddle) do
+    for _,p in pairs(self.data.paddle) do
         p:draw()
     end
-    state.data.ball:draw()
+    self.data.ball:draw()
 
     -- scoreboard
     love.graphics.setColor(0,100,0,100)
     love.graphics.rectangle('fill', w2 - 100,2, 200,32)
     love.graphics.setColor(0,255,0,255)
-    love.graphics.printf(tostring(state.data.score[1]), w2 - 5, 25, 0, 'right')
+    love.graphics.printf(tostring(self.data.score[1]), w2 - 5, 25, 0, 'right')
     love.graphics.print(":", w2 - 3, 24)
-    love.graphics.printf(tostring(state.data.score[2]), w2 + 5, 25, 0, 'left')
+    love.graphics.printf(tostring(self.data.score[2]), w2 + 5, 25, 0, 'left')
 
-    if state.data.timeout > 1.3 then
+    if self.data.timeout > 1.3 then
         love.graphics.setFont(60)
-        rsg = {"go!", "set", "ready?"}
-        love.graphics.printf(rsg[math.floor(state.data.timeout)], w2, h2-100, 0, 'center')
+        rsg = {"go!", "ready?"}
+        love.graphics.printf(rsg[math.floor(self.data.timeout)], w2, h2-100, 0, 'center')
         love.graphics.setFont(20)
     end
 
     particles.draw()
 end,
 
-onkey = function(state, key)
+onkey = function(self, key)
     if key == 'p' then
         gamestate.switch(gamestate.pause)
     elseif key == 'q' then

@@ -1,13 +1,14 @@
 gamestate = {}
 function gamestate.new(st)
     local state = {
-        enter = st.enter or function() end,
-        leave = st.leave or function() end,
-        update = st.update or function() end,
-        draw = st.draw or function() end,
-        onkey = st.onkey or function() end,
-        data = st.data or {},
-        is_initalized = false,
+        enter          = st.enter or function() end,
+        leave          = st.leave or function() end,
+        update         = st.update or function() end,
+        draw           = st.draw or function() end,
+        onkey          = st.onkey or function() end,
+        mousereleased = st.mousereleased or function() end,
+        data           = st.data or {},
+        is_initalized  = false,
     }
     state.init = function(s)
         if st.init then st.init(state) end

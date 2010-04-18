@@ -7,6 +7,10 @@ function vector.new(x,y)
     return v
 end
 
+function vector:unpack()
+    return self.x, self.y
+end
+
 function vector.__add(a,b)
     return vector.new(a.x+b.x, a.y+b.y)
 end
