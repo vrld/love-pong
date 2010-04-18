@@ -21,7 +21,7 @@ enter = function(self, opt)
 		"Like the Millenium Falcon",
 	}
 	local speed = math.ceil(opt[2].speed / 1400 * #speednames)
-	self.data.speed = speednames[speed]
+	self.data.speed = speednames[math.max(speed, #speednames)]
 	self.data.scorediff = opt[2].scorediff
 	if self.data.scorediff > 8 then
 		self.data.mocking = playernames[(opt[1]%2)+1]..", are you still alive?"
@@ -35,12 +35,8 @@ enter = function(self, opt)
 		self.data.mocking = "Damn, that was close!"
 	end
 
-	if not self.data.posession then
-		self.data.posession = "50%/50%"
-	end
 	self.data.statstring = string.format("%s\n%s\n%s",
-	self.data.gametime, self.data.speed,
-	self.data.posession)
+			self.data.gametime, self.data.speed, self.data.posession)
 	self.data.titlestr= "Gametime:\nBall speed:\nBall posession:"
 
 	if not self.data.button then
