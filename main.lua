@@ -2,7 +2,6 @@ require "state_menu.lua"
 require "state_game.lua"
 require "state_pause.lua"
 require "state_finish.lua"
-require "hook.lua"
 
 Font = {}
 function love.load()
